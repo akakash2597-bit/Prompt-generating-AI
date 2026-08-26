@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pro Prompt AI — Turn rough prompts into precision instructions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0c1826;
+    --ink-2:#0f2036;
+    --panel:#10233c;
+    --panel-2:#0d1e33;
+    --grid-line: rgba(125,211,252,0.07);
+    --grid-line-strong: rgba(125,211,252,0.14);
+    --cyan:#7dd3fc;
+    --cyan-dim: rgba(125,211,252,0.35);
+    --amber:#fbbf24;
+    --amber-dim: rgba(251,191,36,0.35);
+    --paper:#e8eef5;
+    --paper-dim:#9db2c7;
+    --paper-faint:#63758c;
+    --line: rgba(232,238,245,0.12);
+    --line-strong: rgba(232,238,245,0.22);
+    --danger:#fb7185;
+    --radius: 3px;
+    --mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --sans: 'Space Grotesk', 'IBM Plex Sans', sans-serif;
+    --body: 'IBM Plex Sans', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background-color: var(--ink);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    color: var(--paper);
+    font-family: var(--body);
+    min-height:100vh;
+    line-height:1.5;
+  }
+  ::selection{ background: var(--amber-dim); color:#fff; }
+  a{color:var(--cyan);}
+
+  .wrap{
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+    min-height: 100vh;
+    display:flex;
+    flex-direction:column;
+  }
+
+  /* ---------- TOP NAV / PAGE INDICATOR ---------- */
+  .topnav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .brand{
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--paper);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .brand .dot-brand{ width:8px; height:8px; background: var(--amber); border-radius:50%; display:inline-block; }
+  .brand em{ color: var(--cyan); font-style:normal; }
+
+  .page-steps{
+    display:flex;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  .page-steps .pstep{
+    padding: 5px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 20px;
+    color: var(--paper-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all .15s ease;
+  }
+  .page-steps .pstep.active{ border-color: var(--cyan); color: var(--cyan); }
+  .page-steps .pstep.done{ border-color: var(--amber-dim); color: var(--amber); }
+
+  /* ---------- PAGES ---------- */
+  .page{ display:none; flex:1; }
+  .page.active{ display:block; animation: fadeIn .35s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform: translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  /* ===== PAGE 1: WELCOME ===== */
+  .welcome{
+    min-height: 70vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding: 40px 0;
+  }
+  .eyebrow{
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom: 18px;
+  }
+  .eyebrow::before{ content:""; width: 22px; height: 1px; background: var(--cyan); display:inline-block; }
+  h1.title{
+    font-family: var(--sans);
+    font-weight: 700;
+    font-size: clamp(34px, 5.5vw, 56px);
+    line-height: 1.05;
+    margin: 0 0 20px;
+    letter-spacing: -0.01em;
+    color: #fff;
+  }
+  h1.title em{ font-style: normal; color: var(--amber); }
+  p.lede{
+    font-size: 17px;
+    color: var(--paper-dim);
+    max-width: 640px;
+    margin: 0 0 30px;
+  }
+  .welcome-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 34px;
+  }
+  .wcard{ background: var(--panel-2); padding: 18px 20px; }
+  .wcard .num{ font-family: var(--mono); font-size: 11px; color: var(--cyan-dim); display:block; margin-bottom:6px; }
+  .wcard h3{ font-family: var(--sans); font-size: 14.5px; margin: 0 0 6px; color:#fff; font-weight:600; }
+  .wcard p{ font-size: 13px; color: var(--paper-dim); margin:0; }
+
+  /* ---------- SECTION LABEL (rulebook page) ---------- */
+  .sec-label{ display:flex; align-items:baseline; gap: 12px; margin: 36px 0 22px; }
+  .sec-label:first-of-type{ margin-top: 8px; }
+  .sec-tag{
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+    color: var(--ink); background: var(--cyan); padding: 3px 8px;
+    border-radius: 2px; text-transform: uppercase; flex-shrink:0;
+  }
+  .sec-label h2{ font-family: var(--sans); font-size: 20px; font-weight: 600; color: #fff; margin: 0; }
+  .sec-label .rule{ flex:1; height:1px; background: var(--line); }
+  .sec-desc{ color: var(--paper-dim); font-size: 14.5px; margin: 0 0 24px; max-width: 640px; }
+
+  .tier-block{ margin-bottom: 6px; }
+  .tier-head{
+    font-family: var(--mono); font-size: 12px; color: var(--paper-faint);
+    text-transform: uppercase; letter-spacing: 0.08em; margin: 22px 0 10px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .tier-head .dot{ width:6px; height:6px; border-radius:50%; background: var(--cyan); }
+  .tier-head.pro .dot{ background: var(--amber); }
+
+  .grid-cards{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+    gap: 1px; background: var(--line); border: 1px solid var(--line);
+  }
+  .card{ background: var(--panel-2); padding: 16px 18px; cursor: default; }
+  .card .num{ font-family: var(--mono); font-size: 11px; color: var(--cyan-dim); display:block; margin-bottom: 6px; }
+  .card h3{ font-family: var(--sans); font-size: 14.5px; margin: 0 0 6px; color: #fff; font-weight: 600; }
+  .card p{ font-size: 13px; color: var(--paper-dim); margin: 0; }
+
+  .rulebook-cta{
+    margin: 40px 0 20px;
+    padding: 26px;
+    border: 1px solid var(--amber-dim);
+    border-radius: var(--radius);
+    background: var(--panel);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:16px;
+  }
+  .rulebook-cta p{ margin:0; color: var(--paper-dim); font-size:14px; max-width:480px; }
+  .rulebook-cta p b{ color:#fff; }
+
+  /* ---------- BUTTONS ---------- */
+  .btn{
+    font-family: var(--mono); font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase;
+    background: transparent; border: 1px solid var(--cyan); color: var(--cyan);
+    padding: 12px 20px; border-radius: 2px; cursor: pointer; transition: all .15s ease;
+    display:inline-flex; align-items:center; gap:8px; white-space:nowrap;
+  }
+  .btn:hover{ background: var(--cyan); color: var(--ink); }
+  .btn:disabled{ opacity:0.4; cursor: not-allowed; }
+  .btn:disabled:hover{ background:transparent; color: var(--cyan); }
+  .btn.primary{ background: var(--amber); border-color: var(--amber); color: var(--ink); font-weight:600; }
+  .btn.primary:hover{ background: transparent; color: var(--amber); }
+  .btn.ghost{ border-color: var(--line-strong); color: var(--paper-dim); }
+  .btn.ghost:hover{ background: var(--line-strong); color: var(--paper); }
+
+  /* ---------- WORKBENCH (calculation page) ---------- */
+  .bench{
+    background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--radius);
+    padding: 26px; position: relative; margin-bottom: 26px;
+  }
+  .bench::before{
+    content: attr(data-step); position:absolute; top:-11px; left: 22px; background: var(--ink);
+    padding: 0 8px; font-family: var(--mono); font-size: 11px; color: var(--amber); letter-spacing:0.08em;
+  }
+  label.field-label{
+    display:block; font-family: var(--mono); font-size: 12px; color: var(--paper-dim);
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+  }
+  textarea, input[type=text]{
+    width:100%; background: var(--ink-2); border: 1px solid var(--line); color: var(--paper);
+    font-family: var(--mono); font-size: 14px; padding: 14px; border-radius: 2px; resize: vertical;
+    outline: none; transition: border-color .15s ease;
+  }
+  textarea:focus, input[type=text]:focus{ border-color: var(--cyan); }
+  textarea::placeholder, input::placeholder{ color: var(--paper-faint); }
+  #basicPrompt{ min-height: 110px; }
+
+  .bench-actions{ margin-top: 18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  .hint{ font-size: 12.5px; color: var(--paper-faint); margin-left:auto; font-family: var(--mono); }
+
+  #questionPanel{ display:none; }
+  .qgrid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; margin-bottom: 20px; }
+  .qfield select, .qfield input[type=text]{
+    width:100%; background: var(--ink-2); border:1px solid var(--line); color: var(--paper);
+    font-family: var(--body); font-size: 13.5px; padding: 10px 12px; border-radius:2px;
+  }
+  .qfield select:focus, .qfield input:focus{ outline:none; border-color: var(--cyan); }
+
+  #resultPanel{ display:none; }
+  .result-shell{ border: 1px solid var(--amber-dim); border-radius: var(--radius); background: var(--panel-2); overflow:hidden; }
+  .result-head{
+    display:flex; justify-content:space-between; align-items:center; padding: 14px 18px;
+    border-bottom: 1px solid var(--line); background: var(--ink-2);
+  }
+  .result-head span{ font-family: var(--mono); font-size: 12px; color: var(--amber); text-transform:uppercase; letter-spacing:0.08em; }
+  #finalPromptText{ padding: 22px; font-family: var(--mono); font-size: 14px; line-height:1.7; color: var(--paper); white-space: pre-wrap; }
+  .tag-legend{ padding: 14px 18px 20px; border-top: 1px solid var(--line); display:flex; flex-wrap:wrap; gap:8px; }
+  .tag{ font-family: var(--mono); font-size: 11px; padding: 5px 10px; border-radius: 3px; border: 1px solid; }
+  mark.ann{ background: transparent; border-bottom: 1.5px dashed var(--cyan); color: inherit; padding: 0 1px; }
+
+  .loading-line{ font-family: var(--mono); font-size: 13px; color: var(--cyan); display:flex; align-items:center; gap:10px; margin-top:18px; }
+  .loading-line .dot-anim::after{ content:""; display:inline-block; animation: dots 1.2s steps(4,end) infinite; }
+  @keyframes dots{ 0%{content:"";} 25%{content:".";} 50%{content:"..";} 75%{content:"...";} }
+
+  .error-box{
+    margin-top:16px; border:1px solid rgba(251,113,133,0.4); background: rgba(251,113,133,0.08);
+    color: var(--danger); font-family: var(--mono); font-size: 13px; padding: 12px 14px; border-radius:2px; display:none;
+  }
+
+  /* ---------- FOOTER / DEV CREDIT ---------- */
+  footer{
+    margin-top: 60px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--paper-faint);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .dev-credit{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding: 6px 12px;
+    border: 1px solid var(--line-strong);
+    border-radius: 20px;
+    color: var(--paper-dim);
+    text-decoration:none;
+    transition: all .15s ease;
+  }
+  .dev-credit:hover{ border-color: var(--cyan); color: var(--cyan); }
+  .dev-credit .badge{
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--amber);
+    color: var(--ink);
+    font-size: 9px;
+    font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--sans);
+  }
+
+  @media (max-width: 640px){
+    .wrap{ padding: 0 16px 30px; }
+    .bench{ padding: 20px 16px; }
+    .page-steps{ display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="topnav">
+    <div class="brand"><span class="dot-brand"></span>Pro Prompt <em>AI</em></div>
+    <div class="page-steps">
+      <span class="pstep active" data-step-label="1">1 · Welcome</span>
+      <span class="pstep" data-step-label="2">2 · Rulebook</span>
+      <span class="pstep" data-step-label="3">3 · Create</span>
+    </div>
+  </nav>
+
+  <!-- ================= PAGE 1: WELCOME ================= -->
+  <section class="page active" id="page1">
+    <div class="welcome">
+      <div class="eyebrow">Prompt engineering workbench</div>
+      <h1 class="title">Meet <em>Pro Prompt AI.</em></h1>
+      <p class="lede">You type a rough, basic prompt. Pro Prompt AI asks what you actually need, then rewrites it into a precision-engineered prompt — labeled with exactly which professional techniques it applied, so your AI output stops being a coin flip and starts being consistent.</p>
+
+      <div class="welcome-grid">
+        <div class="wcard"><span class="num">Problem</span><h3>Inconsistent output</h3><p>The same rough prompt gives you a great answer once and a mediocre one the next time.</p></div>
+        <div class="wcard"><span class="num">Approach</span><h3>Ask, then engineer</h3><p>Pro Prompt AI asks your goal, level, tone, and format before rewriting anything.</p></div>
+        <div class="wcard"><span class="num">Output</span><h3>An annotated blueprint</h3><p>Get back a professional prompt with every technique used clearly tagged.</p></div>
+      </div>
+
+      <div class="bench-actions">
+        <button class="btn primary" id="toRulebookBtn">Continue to the rulebook →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PAGE 2: RULEBOOK ================= -->
+  <section class="page" id="page2">
+    <div class="sec-label">
+      <span class="sec-tag">01</span>
+      <h2>The rulebook</h2>
+      <span class="rule"></span>
+    </div>
+    <p class="sec-desc">Every prompt Pro Prompt AI generates draws from this ladder — basic habits first, professional-grade techniques layered on top.</p>
+
+    <div class="tier-block">
+      <div class="tier-head"><span class="dot"></span> Foundation — fix these first</div>
+      <div class="grid-cards">
+        <div class="card"><span class="num">01</span><h3>Be specific</h3><p>Replace "write about X" with exactly what, for whom, and how long.</p></div>
+        <div class="card"><span class="num">02</span><h3>Give it a role</h3><p>"Act as a senior copy editor" narrows vocabulary, judgment, and tone.</p></div>
+        <div class="card"><span class="num">03</span><h3>State the format</h3><p>Bullets, table, JSON, word count — say the shape you want back.</p></div>
+        <div class="card"><span class="num">04</span><h3>Add context</h3><p>Audience, purpose, and constraints the model can't guess on its own.</p></div>
+      </div>
+    </div>
+
+    <div class="tier-block">
+      <div class="tier-head pro"><span class="dot"></span> Professional — for consistent, repeatable output</div>
+      <div class="grid-cards">
+        <div class="card"><span class="num">05</span><h3>Few-shot examples</h3><p>One or two sample input/output pairs anchor tone and structure.</p></div>
+        <div class="card"><span class="num">06</span><h3>Chain-of-thought</h3><p>"Think step by step before answering" for anything with reasoning.</p></div>
+        <div class="card"><span class="num">07</span><h3>Explicit constraints</h3><p>Say what to avoid, not just what to include — length caps, banned phrases.</p></div>
+        <div class="card"><span class="num">08</span><h3>Success criteria</h3><p>Define what a "good" answer looks like so the model can self-check.</p></div>
+        <div class="card"><span class="num">09</span><h3>Delimiters</h3><p>Wrap reference text in tags or triple-quotes so instructions and data don't blur.</p></div>
+        <div class="card"><span class="num">10</span><h3>Iterative refinement</h3><p>Ask for a draft, then a critique pass, then a final version — in one prompt.</p></div>
+      </div>
+    </div>
+
+    <div class="rulebook-cta">
+      <p>Ready to see these rules applied to <b>your</b> prompt? Pro Prompt AI will ask a few quick questions, then engineer the final version.</p>
+      <button class="btn primary" id="toCreateBtn">Create pro prompt →</button>
+    </div>
+  </section>
+
+  <!-- ================= PAGE 3: CALCULATION / CREATE ================= -->
+  <section class="page" id="page3">
+    <div class="sec-label">
+      <span class="sec-tag">02</span>
+      <h2>Create your pro prompt</h2>
+      <span class="rule"></span>
+    </div>
+
+    <div class="bench" data-step="Step 1 — Raw input">
+      <label class="field-label" for="basicPrompt">Your basic prompt</label>
+      <textarea id="basicPrompt" placeholder="e.g. write me a blog post about productivity"></textarea>
+      <div class="bench-actions">
+        <button class="btn primary" id="analyzeBtn">Analyze prompt →</button>
+        <span class="hint" id="benchHint">No sign-up · nothing is stored</span>
+      </div>
+    </div>
+
+    <div id="questionPanel" class="bench" data-step="Step 2 — Tell it what you need">
+      <div class="qgrid">
+        <div class="qfield">
+          <label class="field-label">What's the actual goal?</label>
+          <input type="text" id="qGoal" placeholder="e.g. get more email signups from the post">
+        </div>
+        <div class="qfield">
+          <label class="field-label">Your prompt-engineering level</label>
+          <select id="qLevel">
+            <option value="beginner">Beginner — keep it simple</option>
+            <option value="intermediate" selected>Intermediate — some structure</option>
+            <option value="advanced">Advanced — full technique stack</option>
+            <option value="expert">Expert — max control &amp; constraints</option>
+          </select>
+        </div>
+        <div class="qfield">
+          <label class="field-label">Tone</label>
+          <select id="qTone">
+            <option value="professional" selected>Professional</option>
+            <option value="conversational">Conversational</option>
+            <option value="persuasive">Persuasive / marketing</option>
+            <option value="academic">Academic</option>
+            <option value="playful">Playful / witty</option>
+          </select>
+        </div>
+        <div class="qfield">
+          <label class="field-label">Output format</label>
+          <select id="qFormat">
+            <option value="free-form prose" selected>Free-form prose</option>
+            <option value="bulleted list">Bulleted list</option>
+            <option value="numbered steps">Numbered steps</option>
+            <option value="table">Table</option>
+            <option value="JSON">JSON</option>
+            <option value="code">Code</option>
+          </select>
+        </div>
+        <div class="qfield">
+          <label class="field-label">Target length</label>
+          <select id="qLength">
+            <option value="short (under 150 words)">Short — under 150 words</option>
+            <option value="medium (300–500 words)" selected>Medium — 300–500 words</option>
+            <option value="long (800+ words / thorough)">Long — 800+ words / thorough</option>
+            <option value="no strict limit">No strict limit</option>
+          </select>
+        </div>
+        <div class="qfield">
+          <label class="field-label">Who's the audience?</label>
+          <input type="text" id="qAudience" placeholder="e.g. small business owners, non-technical">
+        </div>
+      </div>
+      <div class="qfield" style="margin-bottom:20px;">
+        <label class="field-label">Anything to avoid or require? (optional)</label>
+        <input type="text" id="qConstraints" placeholder="e.g. no jargon, must include a call to action">
+      </div>
+      <div class="bench-actions">
+        <button class="btn primary" id="generateBtn">Generate blueprint →</button>
+        <button class="btn ghost" id="backToInputBtn">← back</button>
+      </div>
+      <div class="loading-line" id="loadingLine" style="display:none;">
+        <span>Engineering your prompt<span class="dot-anim"></span></span>
+      </div>
+      <div class="error-box" id="errorBox"></div>
+    </div>
+
+    <div id="resultPanel">
+      <div class="sec-label">
+        <span class="sec-tag">03</span>
+        <h2>The blueprint</h2>
+        <span class="rule"></span>
+      </div>
+      <div class="result-shell">
+        <div class="result-head">
+          <span>Final prompt</span>
+          <button class="btn ghost" id="copyBtn" style="padding:6px 12px; font-size:11px;">Copy</button>
+        </div>
+        <div id="finalPromptText"></div>
+        <div class="tag-legend" id="tagLegend"></div>
+      </div>
+      <div class="bench-actions" style="margin-top:16px;">
+        <button class="btn ghost" id="startOverBtn">↺ start over with a new prompt</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Pro Prompt AI — Basic → Pro, in three steps</span>
+    <a class="dev-credit" href="#" onclick="return false;" title="Developer">
+      <span class="badge">AK</span> Developed by AK AKASH
+    </a>
+  </footer>
+</div>
+
+<script>
+(function(){
+  // ---------- PAGE NAVIGATION ----------
+  const pages = { 1: document.getElementById('page1'), 2: document.getElementById('page2'), 3: document.getElementById('page3') };
+  const steps = document.querySelectorAll('.pstep');
+
+  function goToPage(n){
+    Object.keys(pages).forEach(k => pages[k].classList.remove('active'));
+    pages[n].classList.add('active');
+    steps.forEach((el, idx) => {
+      el.classList.remove('active','done');
+      if (idx + 1 < n) el.classList.add('done');
+      if (idx + 1 === n) el.classList.add('active');
+    });
+    window.scrollTo({ top:0, behavior:'smooth' });
+  }
+
+  document.getElementById('toRulebookBtn').addEventListener('click', () => goToPage(2));
+  document.getElementById('toCreateBtn').addEventListener('click', () => goToPage(3));
+  steps[0].addEventListener('click', () => goToPage(1));
+  steps[1].addEventListener('click', () => goToPage(2));
+
+  // ---------- WORKBENCH LOGIC ----------
+  const basicPromptEl = document.getElementById('basicPrompt');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const questionPanel = document.getElementById('questionPanel');
+  const generateBtn = document.getElementById('generateBtn');
+  const backToInputBtn = document.getElementById('backToInputBtn');
+  const startOverBtn = document.getElementById('startOverBtn');
+  const resultPanel = document.getElementById('resultPanel');
+  const finalPromptText = document.getElementById('finalPromptText');
+  const tagLegend = document.getElementById('tagLegend');
+  const loadingLine = document.getElementById('loadingLine');
+  const errorBox = document.getElementById('errorBox');
+  const copyBtn = document.getElementById('copyBtn');
+
+  const TAG_COLORS = {
+    "Role": "#7dd3fc", "Context": "#a78bfa", "Format": "#34d399", "Constraints": "#fb7185",
+    "Examples": "#fbbf24", "Reasoning": "#f472b6", "Success criteria": "#38bdf8",
+    "Audience": "#fda4af", "Tone": "#c4b5fd"
+  };
+
+  analyzeBtn.addEventListener('click', () => {
+    if (!basicPromptEl.value.trim()) {
+      basicPromptEl.style.borderColor = '#fb7185';
+      basicPromptEl.placeholder = 'Type a prompt first — even one line is fine.';
+      return;
+    }
+    basicPromptEl.style.borderColor = '';
+    questionPanel.style.display = 'block';
+    questionPanel.scrollIntoView({ behavior:'smooth', block:'start' });
+  });
+
+  backToInputBtn.addEventListener('click', () => { questionPanel.style.display = 'none'; });
+
+  startOverBtn.addEventListener('click', () => {
+    resultPanel.style.display = 'none';
+    questionPanel.style.display = 'none';
+    basicPromptEl.value = '';
+    document.getElementById('qGoal').value = '';
+    document.getElementById('qAudience').value = '';
+    document.getElementById('qConstraints').value = '';
+    window.scrollTo({ top:0, behavior:'smooth' });
+  });
+
+  copyBtn.addEventListener('click', () => {
+    const text = finalPromptText.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      copyBtn.textContent = 'Copied ✓';
+      setTimeout(() => copyBtn.textContent = 'Copy', 1500);
+    });
+  });
+
+  function escapeHtml(str){ return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function renderAnnotated(rawText){
+    const usedTags = new Set();
+    let html = escapeHtml(rawText).replace(/\[\[([A-Za-z ]+?):([\s\S]*?)\]\]/g, (m, tag, content) => {
+      const cleanTag = tag.trim();
+      usedTags.add(cleanTag);
+      const color = TAG_COLORS[cleanTag] || '#7dd3fc';
+      return `<mark class="ann" style="border-color:${color}" title="${cleanTag}">${escapeHtml(content)}</mark>`;
+    });
+    finalPromptText.innerHTML = html;
+
+    tagLegend.innerHTML = '';
+    usedTags.forEach(tag => {
+      const color = TAG_COLORS[tag] || '#7dd3fc';
+      const el = document.createElement('span');
+      el.className = 'tag';
+      el.style.color = color;
+      el.style.borderColor = color;
+      el.textContent = tag;
+      tagLegend.appendChild(el);
+    });
+    if (usedTags.size === 0) {
+      tagLegend.innerHTML = '<span class="tag" style="color:#9db2c7;border-color:#9db2c7;">No inline annotations returned</span>';
+    }
+  }
+
+  generateBtn.addEventListener('click', async () => {
+    errorBox.style.display = 'none';
+    const basicPrompt = basicPromptEl.value.trim();
+    const goal = document.getElementById('qGoal').value.trim() || 'not specified';
+    const level = document.getElementById('qLevel').value;
+    const tone = document.getElementById('qTone').value;
+    const format = document.getElementById('qFormat').value;
+    const length = document.getElementById('qLength').value;
+    const audience = document.getElementById('qAudience').value.trim() || 'general audience';
+    const constraints = document.getElementById('qConstraints').value.trim() || 'none stated';
+
+    generateBtn.disabled = true;
+    backToInputBtn.disabled = true;
+    loadingLine.style.display = 'flex';
+
+    const systemPrompt = `You are an expert prompt engineer. You rewrite a user's rough, basic prompt into a professional, production-grade prompt for a large language model.
+
+Apply prompt engineering techniques appropriate to the user's stated skill level (beginner = fewer, simpler techniques; expert = full stack: role, context, constraints, few-shot examples, chain-of-thought, success criteria, delimiters).
+
+Wrap each distinct technique you weave into the final prompt with inline markers in this EXACT format: [[TagName:the text implementing that technique]]. Valid TagName values: Role, Context, Format, Constraints, Examples, Reasoning, Success criteria, Audience, Tone. Every part of the final prompt should sit inside some tag — do not leave large unwrapped stretches. Keep the final prompt itself natural and readable as a prompt, not a list of labels — the tags are metadata for rendering, not visible text.
+
+Respond ONLY with strict JSON, no markdown fences, no preamble, in this exact shape:
+{"finalPrompt": "the full annotated prompt text with [[Tag:...]] markers inline"}`;
+
+    const userPrompt = `Basic prompt to upgrade: "${basicPrompt}"
+
+Context the user provided:
+- Actual goal: ${goal}
+- Prompt-engineering level to target: ${level}
+- Desired tone: ${tone}
+- Desired output format: ${format}
+- Desired length: ${length}
+- Audience: ${audience}
+- Constraints / must-avoid: ${constraints}
+
+Rewrite this into a professional, production-ready prompt using the tagging rules from the system message.`;
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-6",
+          max_tokens: 1000,
+          system: systemPrompt,
+          messages: [{ role: "user", content: userPrompt }]
+        })
+      });
+
+      if (!response.ok) throw new Error(`API returned status ${response.status}`);
+
+      const data = await response.json();
+      const textBlock = (data.content || []).find(b => b.type === 'text');
+      if (!textBlock) throw new Error('No text content returned');
+
+      let cleaned = textBlock.text.trim().replace(/^```json/i, '').replace(/^```/,'').replace(/```$/,'').trim();
+      let parsed;
+      try { parsed = JSON.parse(cleaned); }
+      catch (e) { parsed = { finalPrompt: cleaned }; }
+
+      renderAnnotated(parsed.finalPrompt || 'The model did not return a prompt. Please try again.');
+      resultPanel.style.display = 'block';
+      resultPanel.scrollIntoView({ behavior:'smooth', block:'start' });
+
+    } catch (err) {
+      errorBox.textContent = 'Something went wrong generating your blueprint: ' + err.message + '. Please try again.';
+      errorBox.style.display = 'block';
+    } finally {
+      generateBtn.disabled = false;
+      backToInputBtn.disabled = false;
+      loadingLine.style.display = 'none';
+    }
+  });
+})();
+</script>
+</body>
+</html>
