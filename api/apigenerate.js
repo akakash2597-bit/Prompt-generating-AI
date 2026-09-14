@@ -3,7 +3,7 @@
 // to use your Gemini API key. The frontend calls THIS endpoint,
 // never generativelanguage.googleapis.com directly.
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Basic CORS so your frontend (same domain, but harmless to include) can call this
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
