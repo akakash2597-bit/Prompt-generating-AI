@@ -45,8 +45,6 @@
   ::selection{ background: var(--amber-dim); color:#fff; }
   a{color:var(--cyan);}
 
-
-
   .wrap{
     max-width: 980px;
     margin: 0 auto;
@@ -56,7 +54,6 @@
     flex-direction:column;
   }
 
-  /* ---------- TOP NAV / PAGE INDICATOR ---------- */
   .topnav{
     display:flex;
     align-items:center;
@@ -91,16 +88,15 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     transition: all .15s ease;
+    cursor: pointer;
   }
   .page-steps .pstep.active{ border-color: var(--cyan); color: var(--cyan); }
   .page-steps .pstep.done{ border-color: var(--amber-dim); color: var(--amber); }
 
-  /* ---------- PAGES ---------- */
   .page{ display:none; flex:1; }
   .page.active{ display:block; animation: fadeIn .35s ease; }
   @keyframes fadeIn{ from{opacity:0; transform: translateY(6px);} to{opacity:1; transform:translateY(0);} }
 
-  /* ===== PAGE 1: WELCOME ===== */
   .welcome{
     min-height: 70vh;
     display:flex;
@@ -149,7 +145,6 @@
   .wcard h3{ font-family: var(--sans); font-size: 14.5px; margin: 0 0 6px; color:#fff; font-weight:600; }
   .wcard p{ font-size: 13px; color: var(--paper-dim); margin:0; }
 
-  /* ---------- SECTION LABEL (rulebook page) ---------- */
   .sec-label{ display:flex; align-items:baseline; gap: 12px; margin: 36px 0 22px; }
   .sec-label:first-of-type{ margin-top: 8px; }
   .sec-tag{
@@ -194,7 +189,6 @@
   .rulebook-cta p{ margin:0; color: var(--paper-dim); font-size:14px; max-width:480px; }
   .rulebook-cta p b{ color:#fff; }
 
-  /* ---------- BUTTONS ---------- */
   .btn{
     font-family: var(--mono); font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase;
     background: transparent; border: 1px solid var(--cyan); color: var(--cyan);
@@ -209,7 +203,6 @@
   .btn.ghost{ border-color: var(--line-strong); color: var(--paper-dim); }
   .btn.ghost:hover{ background: var(--line-strong); color: var(--paper); }
 
-  /* ---------- WORKBENCH (calculation page) ---------- */
   .bench{
     background: var(--panel); border: 1px solid var(--line-strong); border-radius: var(--radius);
     padding: 26px; position: relative; margin-bottom: 26px;
@@ -263,10 +256,6 @@
     color: var(--danger); font-family: var(--mono); font-size: 13px; padding: 12px 14px; border-radius:2px; display:none;
   }
 
-
-
-
-  /* ---------- FOOTER / DEV CREDIT ---------- */
   footer{
     margin-top: 60px;
     padding-top: 18px;
@@ -482,13 +471,21 @@
   <footer>
     <span>Pro Prompt AI — Basic → Pro, in three steps</span>
     <a class="dev-credit" href="#" onclick="return false;" title="Developer">
-      <span class="badge">AK</span> Developed by AK Akash
+      <span class="badge">AK</span> Developed by AK AKASH
     </a>
   </footer>
 </div>
 
 <script>
 (function(){
+  // ---------------------------------------------------------------
+  // Point this at your deployed Vercel endpoint, e.g.
+  // "https://pro-prompt-ai.vercel.app/api/generate"
+  // If this file is served BY Vercel itself (recommended), a relative
+  // path like "/api/generate" works as-is with no change needed.
+  // ---------------------------------------------------------------
+  const API_ENDPOINT = "/api/generate";
+
   // ---------- PAGE NAVIGATION ----------
   const pages = { 1: document.getElementById('page1'), 2: document.getElementById('page2'), 3: document.getElementById('page3') };
   const steps = document.querySelectorAll('.pstep');
@@ -625,20 +622,20 @@ Context the user provided:
 Rewrite this into a professional, production-ready prompt using the tagging rules from the system message.`;
 
     try {
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      // Calls YOUR backend proxy — not Anthropic directly. The proxy adds
+      // the API key and forwards this on server-side.
+      const response = await fetch(API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: [{ role: "user", content: userPrompt }]
-        })
+        body: JSON.stringify({ systemPrompt, userPrompt })
       });
 
-      if (!response.ok) throw new Error(`API returned status ${response.status}`);
-
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.error || `Server returned status ${response.status}`);
+      }
+
       const textBlock = (data.content || []).find(b => b.type === 'text');
       if (!textBlock) throw new Error('No text content returned');
 
