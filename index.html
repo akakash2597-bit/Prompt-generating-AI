@@ -636,10 +636,11 @@ Rewrite this into a professional, production-ready prompt using the tagging rule
         throw new Error(data?.error || `Server returned status ${response.status}`);
       }
 
-      const textBlock = (data.content || []).find(b => b.type === 'text');
-      if (!textBlock) throw new Error('No text content returned');
+      // Gemini's response shape: data.candidates[0].content.parts[0].text
+      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) throw new Error('No text content returned');
 
-      let cleaned = textBlock.text.trim().replace(/^```json/i, '').replace(/^```/,'').replace(/```$/,'').trim();
+      let cleaned = rawText.trim().replace(/^```json/i, '').replace(/^```/,'').replace(/```$/,'').trim();
       let parsed;
       try { parsed = JSON.parse(cleaned); }
       catch (e) { parsed = { finalPrompt: cleaned }; }

@@ -1,10 +1,10 @@
 // api/generate.js
-// This runs on Vercel's server, NOT in the browser — so it's the only safe
-// place to use your Anthropic API key. The frontend calls THIS endpoint,
-// never api.anthropic.com directly.
+// Runs on Vercel's server, NOT in the browser — this is the only safe place
+// to use your Gemini API key. The frontend calls THIS endpoint,
+// never generativelanguage.googleapis.com directly.
 
 export default async function handler(req, res) {
-  // Basic CORS so your GitHub Pages / Vercel-hosted frontend can call this
+  // Basic CORS so your frontend (same domain, but harmless to include) can call this
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -20,31 +20,35 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing systemPrompt or userPrompt' });
   }
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.status(500).json({ error: 'Server is missing ANTHROPIC_API_KEY — set it in Vercel project settings.' });
+  if (!process.env.GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'Server is missing GEMINI_API_KEY — set it in Vercel project settings and redeploy.' });
   }
 
+  const GEMINI_MODEL = 'gemini-2.5-flash'; // fast + cheap; swap to gemini-2.5-pro for higher quality
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'x-goog-api-key': process.env.GEMINI_API_KEY
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }]
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          maxOutputTokens: 1000
+        }
       })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
-      // Surface Anthropic's own error message (e.g. billing, invalid key) to the frontend
-      return res.status(response.status).json({ error: data?.error?.message || 'Anthropic API error' });
+      // Surface Gemini's own error message (bad key, quota, etc.) to the frontend
+      return res.status(response.status).json({ error: data?.error?.message || 'Gemini API error' });
     }
 
     return res.status(200).json(data);
