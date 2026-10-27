@@ -478,13 +478,8 @@
 
 <script>
 (function(){
-  // ---------------------------------------------------------------
-  // Point this at your deployed Vercel endpoint, e.g.
-  // "https://pro-prompt-ai.vercel.app/api/generate"
-  // If this file is served BY Vercel itself (recommended), a relative
-  // path like "/api/generate" works as-is with no change needed.
-  // ---------------------------------------------------------------
-  const API_ENDPOINT = "/api/generate";
+  // Points to your Flask backend route '/generate'
+  const API_ENDPOINT = "/generate";
 
   // ---------- PAGE NAVIGATION ----------
   const pages = { 1: document.getElementById('page1'), 2: document.getElementById('page2'), 3: document.getElementById('page3') };
@@ -622,8 +617,6 @@ Context the user provided:
 Rewrite this into a professional, production-ready prompt using the tagging rules from the system message.`;
 
     try {
-      // Calls YOUR backend proxy — not Anthropic directly. The proxy adds
-      // the API key and forwards this on server-side.
       const response = await fetch(API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -636,8 +629,8 @@ Rewrite this into a professional, production-ready prompt using the tagging rule
         throw new Error(data?.error || `Server returned status ${response.status}`);
       }
 
-      // Gemini's response shape: data.candidates[0].content.parts[0].text
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      // Extract text returned from Flask backend proxy route
+      const rawText = data?.response;
       if (!rawText) throw new Error('No text content returned');
 
       let cleaned = rawText.trim().replace(/^```json/i, '').replace(/^```/,'').replace(/```$/,'').trim();
