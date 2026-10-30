@@ -476,10 +476,19 @@
   </footer>
 </div>
 
+<div class="qfield" style="margin-bottom:20px;">
+          <label class="field-label">Anything to avoid or require? (optional)</label>
+          <input type="text" id="qConstraints" placeholder="e.g. no jargon, must include a call to action">
+        </div>
+        <div class="qfield" style="margin-bottom:20px; border-top: 1px solid var(--line); padding-top: 15px;">
+          <label class="field-label" style="color: var(--amber);">Optional: Your Custom Gemini API Key</label>
+          <input type="password" id="customApiKey" placeholder="Paste your personal key to bypass server limits">
+        </div>
+
 <script>
 (function(){
   // Points to your Flask backend route '/generate'
-  const API_ENDPOINT = "/generate";
+  const API_ENDPOINT = "http://127.0.0.1:5000/generate";
 
   // ---------- PAGE NAVIGATION ----------
   const pages = { 1: document.getElementById('page1'), 2: document.getElementById('page2'), 3: document.getElementById('page3') };
@@ -616,15 +625,20 @@ Context the user provided:
 
 Rewrite this into a professional, production-ready prompt using the tagging rules from the system message.`;
 
+    const customApiKey = document.getElementById('customApiKey').value.trim();
+    const headers = { "Content-Type": "application/json" };
+    if (customApiKey) {
+      headers["X-Gemini-API-Key"] = customApiKey;
+    }
+
     try {
       const response = await fetch(API_ENDPOINT, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: headers,
         body: JSON.stringify({ systemPrompt, userPrompt })
       });
 
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data?.error || `Server returned status ${response.status}`);
       }
