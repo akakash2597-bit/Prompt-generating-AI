@@ -488,7 +488,7 @@
 <script>
 (function(){
   // Points to your Flask backend route '/generate'
- const API_ENDPOINT = "https://prompt-generating-ai.onrender.com/generate";
+  const API_ENDPOINT = "https://prompt-generating-ai.onrender.com/generate";
 
   // ---------- PAGE NAVIGATION ----------
   const pages = { 1: document.getElementById('page1'), 2: document.getElementById('page2'), 3: document.getElementById('page3') };
@@ -589,6 +589,15 @@
   }
 
   generateBtn.addEventListener('click', async () => {
+    const customApiKey = document.getElementById('customApiKey').value.trim();
+    const headers = {
+      'Content-Type': 'application/json'
+    };
+
+    if (customApiKey) {
+      headers['X-Gemini-API-Key'] = customApiKey;
+    }
+
     errorBox.style.display = 'none';
     const basicPrompt = basicPromptEl.value.trim();
     const goal = document.getElementById('qGoal').value.trim() || 'not specified';
@@ -625,46 +634,28 @@ Context the user provided:
 
 Rewrite this into a professional, production-ready prompt using the tagging rules from the system message.`;
 
-generateBtn.addEventListener('click', async () => {
-  const customApiKey = document.getElementById('customApiKey').value.trim();
-  const headers = {
-    "Content-Type": "application/json"
-  };
+    try {
+      const response = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          systemPrompt: systemPrompt,
+          userPrompt: userPrompt
+        })
+      });
 
-  if (customApiKey) {
-    headers["X-Gemini-API-Key"] = customApiKey;
-  }
-
-  try {
-    const response = await fetch(API_ENDPOINT, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify({
-        systemPrompt: systemPrompt,
-        userPrompt: userPrompt
-      })
-    });
-
-    const data = await response.json();
-    // Handle your response data here
-  } catch (err) {
-    console.error(err);
-  }
-});
-
-      // Extract text returned from Flask backend proxy route
+      const data = await response.json();
       const rawText = data?.response;
       if (!rawText) throw new Error('No text content returned');
 
-      let cleaned = rawText.trim().replace(/^```json/i, '').replace(/^```/,'').replace(/```$/,'').trim();
+      let cleaned = rawText.trim().replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
       let parsed;
       try { parsed = JSON.parse(cleaned); }
       catch (e) { parsed = { finalPrompt: cleaned }; }
 
       renderAnnotated(parsed.finalPrompt || 'The model did not return a prompt. Please try again.');
       resultPanel.style.display = 'block';
-      resultPanel.scrollIntoView({ behavior:'smooth', block:'start' });
-
+      resultPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (err) {
       errorBox.textContent = 'Something went wrong generating your blueprint: ' + err.message + '. Please try again.';
       errorBox.style.display = 'block';
