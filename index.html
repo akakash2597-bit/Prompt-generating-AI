@@ -625,23 +625,33 @@ Context the user provided:
 
 Rewrite this into a professional, production-ready prompt using the tagging rules from the system message.`;
 
-    const customApiKey = document.getElementById('customApiKey').value.trim();
-    const headers = { "Content-Type": "application/json" };
-    if (customApiKey) {
-      headers["X-Gemini-API-Key"] = customApiKey;
-    }
+// Inside your button click handler or form submission logic:
+const customApiKey = document.getElementById('customApiKey').value.trim();
 
-    try {
-      const response = await fetch(API_ENDPOINT, {
-        method: "POST",
-        headers: headers,
-        body: JSON.stringify({ systemPrompt, userPrompt })
-      });
+const headers = {
+  "Content-Type": "application/json"
+};
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.error || `Server returned status ${response.status}`);
-      }
+// If the user entered a custom key, include it in the headers
+if (customApiKey) {
+  headers["X-Gemini-API-Key"] = customApiKey;
+}
+
+try {
+  const response = await fetch(API_ENDPOINT, {
+    method: "POST",
+    headers: headers,
+    body: JSON.stringify({
+      systemPrompt: systemPrompt,
+      userPrompt: userPrompt
+    })
+  });
+  
+  const data = await response.json();
+  // Handle response...
+} catch (err) {
+  console.error(err);
+}
 
       // Extract text returned from Flask backend proxy route
       const rawText = data?.response;
