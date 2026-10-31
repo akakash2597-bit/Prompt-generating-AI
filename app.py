@@ -36,12 +36,22 @@ def generate():
             config={'system_instruction': system_prompt}
         )
         
-        # Check if text exists safely
-        if not api_response or not api_response.text:
-            print("API Response blocked or empty:", api_response)
-            return jsonify({'error': 'Model returned an empty response. Please check your prompt or safety settings.'}), 500
+         # Robust text extraction
+        response_text = ""
+        if hasattr(api_response, 'text') and api_response.text:
+            response_text = api_response.text
+        elif api_response.candidates:
+            for candidate in api_response.candidates:
+                if candidate.content and candidate.content.parts:
+                    for part in candidate.content.parts:
+                        if hasattr(part, 'text') and part.text:
+                            response_text += part.text
 
-        return jsonify({'response': api_response.text})
+        if not response_text:
+            print("Full API Response:", api_response)
+            return jsonify({'error': 'No text returned from model. It might have been blocked by safety filters.'}), 500
+
+        return jsonify({'response': response_text})
         
     except Exception as e:
         err_msg = str(e)
