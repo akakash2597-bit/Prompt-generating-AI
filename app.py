@@ -23,18 +23,22 @@ def generate():
         if not user_prompt:
             return jsonify({'error': 'Missing user prompt'}), 400
 
+        # Grab custom API key from request headers
         user_api_key = request.headers.get('X-Gemini-API-Key')
-        current_client = genai.Client(api_key=user_api_key) if user_api_key else default_client
+        if user_api_key and user_api_key.strip():
+            print("Using user-provided custom API key.")
+            current_client = genai.Client(api_key=user_api_key.strip())
+        else:
+            print("Using default server API key.")
+            current_client = default_client
 
-        # Combine prompts to avoid SDK config version mismatches
         full_prompt = f"System Instructions:\n{system_prompt}\n\nUser Task:\n{user_prompt}"
 
         api_response = current_client.models.generate_content(
-    model='gemini-3.8-flash',
-    contents=full_prompt
-)
+            model='gemini-2.0-flash',
+            contents=full_prompt
+        )
         
-        # Safe multi-way text extraction
         response_text = ""
         if hasattr(api_response, 'text') and api_response.text:
             response_text = api_response.text
@@ -46,8 +50,7 @@ def generate():
                             response_text += part.text
 
         if not response_text:
-            print("Full API Response Debug:", api_response)
-            return jsonify({'error': 'Model returned an empty response. Try pasting your own API key.'}), 500
+            return jsonify({'error': 'Model returned an empty response.'}), 500
 
         return jsonify({'response': response_text})
 
