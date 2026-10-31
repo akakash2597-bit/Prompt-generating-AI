@@ -26,24 +26,32 @@ def generate():
         user_api_key = request.headers.get('X-Gemini-API-Key')
         current_client = genai.Client(api_key=user_api_key) if user_api_key else default_client
 
-        # Use config dictionary for system instruction natively
+        # Combine prompts to avoid SDK config version mismatches
+        full_prompt = f"System Instructions:\n{system_prompt}\n\nUser Task:\n{user_prompt}"
+
         api_response = current_client.models.generate_content(
             model='gemini-2.0-flash',
-            contents=user_prompt,
-            config={
-                'system_instruction': system_prompt
-            }
+            contents=full_prompt
         )
         
-        if api_response and hasattr(api_response, 'text') and api_response.text:
-            return jsonify({'response': api_response.text})
-        else:
-            return jsonify({'error': 'Model returned an empty response.'}), 500
+        # Safe multi-way text extraction
+        response_text = ""
+        if hasattr(api_response, 'text') and api_response.text:
+            response_text = api_response.text
+        elif api_response.candidates:
+            for candidate in api_response.candidates:
+                if candidate.content and candidate.content.parts:
+                    for part in candidate.content.parts:
+                        if hasattr(part, 'text') and part.text:
+                            response_text += part.text
+
+        if not response_text:
+            print("Full API Response Debug:", api_response)
+            return jsonify({'error': 'Model returned an empty response. Try pasting your own API key.'}), 500
+
+        return jsonify({'response': response_text})
 
     except Exception as e:
         err_msg = str(e)
         print("Backend Error:", err_msg)
         return jsonify({'error': err_msg}), 500
-
-if __name__ == '__main__':
-    app.run(port=5000, debug=True)
