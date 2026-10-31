@@ -625,33 +625,32 @@ Context the user provided:
 
 Rewrite this into a professional, production-ready prompt using the tagging rules from the system message.`;
 
-// Inside your button click handler or form submission logic:
-const customApiKey = document.getElementById('customApiKey').value.trim();
+generateBtn.addEventListener('click', async () => {
+  const customApiKey = document.getElementById('customApiKey').value.trim();
+  const headers = {
+    "Content-Type": "application/json"
+  };
 
-const headers = {
-  "Content-Type": "application/json"
-};
+  if (customApiKey) {
+    headers["X-Gemini-API-Key"] = customApiKey;
+  }
 
-// If the user entered a custom key, include it in the headers
-if (customApiKey) {
-  headers["X-Gemini-API-Key"] = customApiKey;
-}
+  try {
+    const response = await fetch(API_ENDPOINT, {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({
+        systemPrompt: systemPrompt,
+        userPrompt: userPrompt
+      })
+    });
 
-try {
-  const response = await fetch(API_ENDPOINT, {
-    method: "POST",
-    headers: headers,
-    body: JSON.stringify({
-      systemPrompt: systemPrompt,
-      userPrompt: userPrompt
-    })
-  });
-  
-  const data = await response.json();
-  // Handle response...
-} catch (err) {
-  console.error(err);
-}
+    const data = await response.json();
+    // Handle your response data here
+  } catch (err) {
+    console.error(err);
+  }
+});
 
       // Extract text returned from Flask backend proxy route
       const rawText = data?.response;
