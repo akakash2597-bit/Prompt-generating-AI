@@ -31,7 +31,7 @@ def generate():
         full_contents = f"System Instructions: {system_prompt}\n\nUser Prompt: {user_prompt}"
 
         api_response = current_client.models.generate_content(
-            model='gemini-3.8-flash',
+            model='gemini-2.5-flash',
             contents=user_prompt,
             config={
                 'system_instruction': system_prompt
