@@ -30,8 +30,8 @@ def generate():
         # Combine system instruction and user prompt cleanly
         full_contents = f"System Instructions: {system_prompt}\n\nUser Prompt: {user_prompt}"
 
-        api_response = client.models.generate_content(
-            model='gemini-2.0-flash',
+        api_response = current_client.models.generate_content(
+            model='gemini-3.8-flash',
             contents=user_prompt,
             config={
                 'system_instruction': system_prompt
