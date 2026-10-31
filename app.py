@@ -6,7 +6,6 @@ from google import genai
 
 load_dotenv()
 app = Flask(__name__)
-# Explicitly allow the custom X-Gemini-API-Key header through CORS
 CORS(app, resources={r"/*": {"origins": "*"}}, allow_headers=["Content-Type", "X-Gemini-API-Key"])
 
 default_client = genai.Client()
@@ -24,19 +23,16 @@ def generate():
         if not user_prompt:
             return jsonify({'error': 'Missing user prompt'}), 400
 
-        # Read the custom API key from headers
         user_api_key = request.headers.get('X-Gemini-API-Key')
         if user_api_key and user_api_key.strip():
-            print("Using user-provided custom API key.")
             current_client = genai.Client(api_key=user_api_key.strip())
         else:
-            print("Using default server API key.")
             current_client = default_client
 
         full_prompt = f"System Instructions:\n{system_prompt}\n\nUser Task:\n{user_prompt}"
 
         api_response = current_client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-3.8-flash',
             contents=full_prompt
         )
         
