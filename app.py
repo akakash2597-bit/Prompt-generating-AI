@@ -31,10 +31,16 @@ def generate():
             client = default_client
 
         api_response = client.models.generate_content(
-            model='gemini-3.8-flash',
+            model='gemini-2.0-flash',
             contents=user_prompt,
             config={'system_instruction': system_prompt}
         )
+        
+        # Check if text exists safely
+        if not api_response or not api_response.text:
+            print("API Response blocked or empty:", api_response)
+            return jsonify({'error': 'Model returned an empty response. Please check your prompt or safety settings.'}), 500
+
         return jsonify({'response': api_response.text})
         
     except Exception as e:
