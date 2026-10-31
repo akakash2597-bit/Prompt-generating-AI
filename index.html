@@ -588,7 +588,7 @@
     }
   }
 
-  generateBtn.addEventListener('click', async () => {
+    generateBtn.addEventListener('click', async () => {
     const customApiKey = document.getElementById('customApiKey').value.trim();
     const headers = {
       'Content-Type': 'application/json'
@@ -597,7 +597,6 @@
     if (customApiKey) {
       headers['X-Gemini-API-Key'] = customApiKey;
     }
-
     errorBox.style.display = 'none';
     const basicPrompt = basicPromptEl.value.trim();
     const goal = document.getElementById('qGoal').value.trim() || 'not specified';
