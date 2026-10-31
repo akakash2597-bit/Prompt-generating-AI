@@ -30,9 +30,9 @@ def generate():
         full_prompt = f"System Instructions:\n{system_prompt}\n\nUser Task:\n{user_prompt}"
 
         api_response = current_client.models.generate_content(
-            model='gemini-2.0-flash',
-            contents=full_prompt
-        )
+    model='gemini-3.8-flash',
+    contents=full_prompt
+)
         
         # Safe multi-way text extraction
         response_text = ""
