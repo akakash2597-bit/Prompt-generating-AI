@@ -30,16 +30,18 @@ def generate():
         # Combine system instruction and user prompt cleanly
         full_contents = f"System Instructions: {system_prompt}\n\nUser Prompt: {user_prompt}"
 
-        api_response = current_client.models.generate_content(
+        api_response = client.models.generate_content(
             model='gemini-2.0-flash',
-            contents=full_contents
+            contents=user_prompt,
+            config={
+                'system_instruction': system_prompt
+            }
         )
         
-        if api_response and hasattr(api_response, 'text') and api_response.text:
+        if api_response and api_response.text:
             return jsonify({'response': api_response.text})
         else:
-            return jsonify({'error': 'Model returned an empty response. Check your API key or prompt.'}), 500
-
+            return jsonify({'error': 'Model returned an empty response.'}), 500
     except Exception as e:
         err_msg = str(e)
         print("Backend Error:", err_msg)
