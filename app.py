@@ -23,22 +23,23 @@ def generate():
         if not user_prompt:
             return jsonify({'error': 'Missing user prompt'}), 400
 
-        # Check if user supplied their own custom API key
         user_api_key = request.headers.get('X-Gemini-API-Key')
         current_client = genai.Client(api_key=user_api_key) if user_api_key else default_client
 
-        # Combine system instruction and user prompt cleanly
-        full_contents = f"System Instructions: {system_prompt}\n\nUser Prompt: {user_prompt}"
-
+        # Use config dictionary for system instruction natively
         api_response = current_client.models.generate_content(
             model='gemini-2.0-flash',
-            contents=full_contents
+            contents=user_prompt,
+            config={
+                'system_instruction': system_prompt
+            }
         )
         
-        if api_response and api_response.text:
+        if api_response and hasattr(api_response, 'text') and api_response.text:
             return jsonify({'response': api_response.text})
         else:
             return jsonify({'error': 'Model returned an empty response.'}), 500
+
     except Exception as e:
         err_msg = str(e)
         print("Backend Error:", err_msg)
